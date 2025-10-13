@@ -16,7 +16,7 @@ st.title("Modélisation du Risque dans la Construction Immobilière — Applicat
 
 st.markdown("""
 ###
-Application Streamlit de modélisation du risque de Construction Immobilière.
+Application de modélisation du risque de Construction Immobilière.
 Permet d’importer, explorer et visualiser des données,
 ainsi que de construire et évaluer des modèles prédictifs de risque de construction.
 """)
