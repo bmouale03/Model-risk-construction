@@ -15,11 +15,11 @@ st.set_page_config(page_title="Analyse du Risque de Construction Immobilière", 
 st.title("Modélisation du Risque dans la Construction Immobilière — Application Interactive")
 
 st.markdown("""
-###
-Application de modélisation du risque de Construction Immobilière.
-Permet d’importer, explorer et visualiser des données,
-ainsi que de construire et évaluer des modèles prédictifs de risque de construction.
+### 🏗️ Application de modélisation du risque de Construction Immobilière
+Permet d’importer, explorer et visualiser des données, ainsi que de construire et évaluer des modèles prédictifs de risque de construction.  
+L’application offre également la possibilité de définir, de manière **manuelle ou automatique**, un **diapason de risque de construction**, et de **classer les entreprises immobilières** selon leur niveau de risque : **critique**, **moyen** ou **excellent**.
 """)
+
 
 # =========================
 # 🔧 Sidebar — Paramètres
