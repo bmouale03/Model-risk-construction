@@ -11,8 +11,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, confusion_matrix, classification_report
 
-st.set_page_config(page_title="Analyse du Risque de Construction", layout="wide")
-st.title("Modèle de Risque de Construction — App interactive")
+st.set_page_config(page_title="Analyse du Risque de Construction Immobilière", layout="wide")
+st.title("Modélisation du Risque dans la Construction Immobilière — Application Interactive")
+
+st.markdown("""
+###
+Application Streamlit de modélisation du risque de Construction Immobilière.
+Permet d’importer, explorer et visualiser des données,
+ainsi que de construire et évaluer des modèles prédictifs de risque de construction.
+""")
 
 # =========================
 # 🔧 Sidebar — Paramètres
