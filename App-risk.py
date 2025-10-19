@@ -1,4 +1,3 @@
-# app.py
 import io
 import numpy as np
 import pandas as pd
@@ -15,18 +14,16 @@ st.title("Modélisation du Risque dans la Construction Immobilière — Applicat
 
 st.markdown("""
 ### 🏗️ Application de modélisation du risque de Construction Immobilière
-Permet d’importer, explorer et visualiser des données, ainsi que de construire et évaluer des modèles prédictifs de risque de construction.  
-L’application offre également la possibilité de définir, de manière **manuelle ou automatique**, un **diapason de risque de construction**, et de **classer les entreprises immobilières** selon leur niveau de risque : **critique**, **moyen** ou **excellent**.
+Importe, explore et visualise des données, puis construis un modèle prédictif de risque de construction.
+Tu peux aussi définir le **diapason de risque** (Critique, Moyen, Excellent) et classer les entreprises automatiquement.
 """)
 
-
-# =========================
-# 🔧 Sidebar — Paramètres
-# =========================
+# ===========================================================
+# 🔧 SIDEBAR
+# ===========================================================
 st.sidebar.header("Paramètres")
 
 uploaded_file = st.sidebar.file_uploader("Fichier Excel (.xlsx)", type=["xlsx"])
-
 test_size = st.sidebar.slider("Taille du jeu de test", 0.1, 0.5, 0.2, 0.05)
 random_state = st.sidebar.number_input("Random state", min_value=0, value=42, step=1)
 
@@ -39,54 +36,38 @@ if model_name == "Random Forest":
 
 st.sidebar.markdown("---")
 th_mode = st.sidebar.radio("Seuils du diapason", ["Manuels", "Automatiques (quantiles)"])
-
-# Seuils par défaut
 low_default, high_default = 0.45, 0.65
 
 if th_mode == "Manuels":
     low = st.sidebar.slider("Seuil bas (Critique < x)", 0.0, 1.0, low_default, 0.01)
     high = st.sidebar.slider("Seuil haut (Excellent ≥ x)", 0.0, 1.0, high_default, 0.01)
     if low >= high:
-        st.sidebar.error("⚠️ Le seuil bas doit être strictement inférieur au seuil haut.")
+        st.sidebar.error("⚠️ Le seuil bas doit être < au seuil haut.")
 else:
     q_low = st.sidebar.slider("Quantile bas", 0.0, 0.5, 0.35, 0.01)
     q_high = st.sidebar.slider("Quantile haut", 0.5, 1.0, 0.65, 0.01)
     if q_low >= q_high:
         st.sidebar.error("⚠️ Le quantile bas doit être < quantile haut.")
 
-st.sidebar.markdown("---")
-st.sidebar.caption("Colonnes attendues :")
-st.sidebar.code(
-    "Niveau ingénieurs\nNiveau techniciens\nExpérience ingénieurs\n"
-    "Expérience techniciens\nTechnologie exploitée\nImpacc Climat\nExpérience entreprise\n"
-    "indice_risk_const",
-    language="markdown",
-)
-
-# =========================
-# 🧾 Corps — Données
-# =========================
+# ===========================================================
+# 📘 Données
+# ===========================================================
 def required_columns():
     return [
-        "Niveau ingénieurs",
-        "Niveau techniciens",
-        "Expérience ingénieurs",
-        "Expérience techniciens",
-        "Technologie exploitée",
-        "Impacc Climat",
-        "Expérience entreprise",
-        "indice_risk_const",
+        "Niveau ingénieurs", "Niveau techniciens",
+        "Expérience ingénieurs", "Expérience techniciens",
+        "Technologie exploitée", "Impacc Climat",
+        "Expérience entreprise", "indice_risk_const"
     ]
 
 if not uploaded_file:
-    st.info("➡️ Charge un fichier **.xlsx** dans la barre latérale pour commencer.")
+    st.info("➡️ Charge un fichier Excel (.xlsx) dans la barre latérale pour commencer.")
     st.stop()
 
-# Lecture
 try:
     df = pd.read_excel(uploaded_file)
 except Exception as e:
-    st.error(f"Erreur de lecture du fichier : {e}")
+    st.error(f"Erreur lors de la lecture du fichier : {e}")
     st.stop()
 
 missing = [c for c in required_columns() if c not in df.columns]
@@ -99,20 +80,16 @@ st.subheader("Aperçu des données")
 st.dataframe(df.head())
 
 features = [
-    "Niveau ingénieurs",
-    "Niveau techniciens",
-    "Expérience ingénieurs",
-    "Expérience techniciens",
-    "Technologie exploitée",
-    "Impacc Climat",
-    "Expérience entreprise",
+    "Niveau ingénieurs", "Niveau techniciens",
+    "Expérience ingénieurs", "Expérience techniciens",
+    "Technologie exploitée", "Impacc Climat",
+    "Expérience entreprise"
 ]
 target = "indice_risk_const"
 
 X = df[features].copy()
 y = df[target].astype(float).copy()
 
-# Seuils automatiques si demandé
 if th_mode == "Automatiques (quantiles)":
     low = float(y.quantile(q_low))
     high = float(y.quantile(q_high))
@@ -124,9 +101,9 @@ st.markdown(
     f"Excellent: *x ≥ {high:.3f}*"
 )
 
-# =========================
-# 🧠 Entraînement
-# =========================
+# ===========================================================
+# 🧠 Modélisation
+# ===========================================================
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=test_size, random_state=random_state
 )
@@ -138,7 +115,7 @@ else:
         n_estimators=n_estimators,
         max_depth=rf_max_depth,
         random_state=random_state,
-        n_jobs=-1,
+        n_jobs=-1
     )
 
 model.fit(X_train, y_train)
@@ -146,16 +123,12 @@ y_pred = model.predict(X_test)
 
 mse = mean_squared_error(y_test, y_pred)
 st.subheader("📈 Évaluation du modèle")
-c1, c2 = st.columns(2)
-with c1:
-    st.metric("MSE (test)", f"{mse:.4f}")
-with c2:
-    st.write("Taille test:", len(y_test))
+st.metric("MSE (test)", f"{mse:.4f}")
 
-# =========================
+# ===========================================================
 # 🏷️ Classification
-# =========================
-def classify_risk(v: float) -> str:
+# ===========================================================
+def classify_risk(v):
     if v < low:
         return "Critique"
     elif v < high:
@@ -172,120 +145,128 @@ df_results["Diapason_Prédit"] = df_results["Risque_Prédit"].apply(classify_ris
 st.subheader("🗂️ Résultats (échantillon)")
 st.dataframe(df_results.head(20))
 
-# =========================
-#  Visualisations
-# =========================
+# ===========================================================
+# 📊 Visualisations
+# ===========================================================
 st.subheader("📊 Visualisations")
 
-# 1) Répartition par catégorie (barres)
+# 1️⃣ Distribution
 colA, colB = st.columns(2)
 with colA:
-    st.write("Répartition par catégorie (prédite)")
-    fig1, ax1 = plt.subplots(figsize=(5, 4))
+    fig1, ax1 = plt.subplots()
     df_results["Diapason_Prédit"].value_counts().plot(kind="bar", ax=ax1)
-    ax1.set_xlabel("Diapason")
-    ax1.set_ylabel("Nombre")
-    ax1.grid(axis="y", linestyle="--", alpha=0.5)
+    ax1.set_title("Répartition par catégorie prédite")
     st.pyplot(fig1)
-
 with colB:
-    st.write("Camembert des catégories (prédit)")
-    fig2, ax2 = plt.subplots(figsize=(5, 4))
-    df_results["Diapason_Prédit"].value_counts().plot(
-        kind="pie", autopct="%1.1f%%", startangle=90, shadow=True, ax=ax2
-    )
+    fig2, ax2 = plt.subplots()
+    df_results["Diapason_Prédit"].value_counts().plot(kind="pie", autopct="%1.1f%%", ax=ax2)
     ax2.set_ylabel("")
+    ax2.set_title("Camembert des catégories")
     st.pyplot(fig2)
 
-# 2) Scatter: réel vs prédit
-st.write("Prédiction vs Valeurs réelles (idéal = ligne pointillée)")
+# 2️⃣ Scatter réel vs prédit
 fig3, ax3 = plt.subplots(figsize=(6, 4))
 ax3.scatter(y_test, y_pred, alpha=0.7)
-min_v = min(y_test.min(), y_pred.min())
-max_v = max(y_test.max(), y_pred.max())
-ax3.plot([min_v, max_v], [min_v, max_v], linestyle="--")
+ax3.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--')
 ax3.set_xlabel("Risque réel")
 ax3.set_ylabel("Risque prédit")
+ax3.set_title("Risque réel vs prédit")
 st.pyplot(fig3)
 
-# 3) Matrice de confusion + rapport
-y_test_cl = df_results["Diapason_Réel"]
-y_pred_cl = df_results["Diapason_Prédit"]
+# 3️⃣ Matrice de confusion
 labels = ["Critique", "Moyen", "Excellent"]
-
-cm = confusion_matrix(y_test_cl, y_pred_cl, labels=labels)
-st.write("Matrice de confusion (heatmap)")
-fig4, ax4 = plt.subplots(figsize=(6, 4))
-sns.heatmap(
-    cm, annot=True, fmt="d", cmap="Blues",
-    xticklabels=labels, yticklabels=labels, ax=ax4
-)
+cm = confusion_matrix(df_results["Diapason_Réel"], df_results["Diapason_Prédit"], labels=labels)
+fig4, ax4 = plt.subplots(figsize=(5, 4))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels, ax=ax4)
 ax4.set_xlabel("Prédit")
 ax4.set_ylabel("Réel")
+ax4.set_title("Matrice de confusion")
 st.pyplot(fig4)
 
-report_dict = classification_report(y_test_cl, y_pred_cl, target_names=labels, output_dict=True)
+# 4️⃣ Rapport de classification
+report_dict = classification_report(
+    df_results["Diapason_Réel"],
+    df_results["Diapason_Prédit"],
+    target_names=labels,
+    output_dict=True
+)
 df_report = pd.DataFrame(report_dict).transpose()
-st.write("Rapport de classification")
 st.dataframe(df_report)
 
-# 4) Importance des variables / coefficients
+# 5️⃣ Importance / coefficients
 st.subheader("Importance des facteurs")
 if model_name == "Régression linéaire":
-    coefs = pd.Series(model.coef_, index=features).sort_values(key=abs, ascending=False)
-    st.write("Coefficients (ordre décroissant par |coefficient|)")
-    st.dataframe(coefs.rename("Coefficient"))
-    fig5, ax5 = plt.subplots(figsize=(6, 4))
+    coefs = pd.Series(model.coef_, index=features)
+    fig5, ax5 = plt.subplots()
     coefs.sort_values().plot(kind="barh", ax=ax5)
-    ax5.set_xlabel("Coefficient")
+    ax5.set_title("Coefficients du modèle linéaire")
     st.pyplot(fig5)
 else:
-    importances = pd.Series(model.feature_importances_, index=features).sort_values(ascending=True)
-    st.write("Importances (Random Forest)")
-    st.dataframe(importances.rename("Importance"))
-    fig6, ax6 = plt.subplots(figsize=(6, 4))
-    importances.plot(kind="barh", ax=ax6)
-    ax6.set_xlabel("Importance")
+    importances = pd.Series(model.feature_importances_, index=features)
+    fig6, ax6 = plt.subplots()
+    importances.sort_values().plot(kind="barh", ax=ax6)
+    ax6.set_title("Importances des variables (Random Forest)")
     st.pyplot(fig6)
 
-# =========================
-# ⬇ Export Excel
-# =========================
-st.subheader("⬇ Export des résultats")
+# ===========================================================
+# 📉 Heatmap des erreurs par facteur
+# ===========================================================
+st.subheader("🔥 Analyse des erreurs par facteur")
 
-def make_results_excel(_df_results: pd.DataFrame, _df_report: pd.DataFrame, _cm: np.ndarray) -> bytes:
+df_errors = X_test.copy()
+df_errors["Risque_Réel"] = y_test
+df_errors["Risque_Prédit"] = y_pred
+df_errors["Erreur_Risque"] = y_test - y_pred
+
+# Calcul corrélation entre erreur et facteurs
+corr = df_errors.corr(numeric_only=True)["Erreur_Risque"].sort_values(ascending=False).to_frame()
+
+st.markdown("**Corrélation des erreurs avec les variables explicatives**")
+fig_err, ax_err = plt.subplots(figsize=(6, 4))
+sns.heatmap(corr.T, annot=True, cmap="coolwarm", center=0, ax=ax_err)
+ax_err.set_title("Heatmap des erreurs par facteur (corrélation)")
+st.pyplot(fig_err)
+
+# ===========================================================
+# 📤 Export Excel
+# ===========================================================
+st.subheader("⬇ Export du rapport complet")
+
+def make_results_excel():
     buf = io.BytesIO()
+
+    # Coefficients / importances
+    if model_name == "Régression linéaire":
+        df_coeffs = pd.DataFrame({"Facteur": features, "Coefficient": model.coef_})
+        df_coeffs.loc[len(df_coeffs)] = ["Constante (intercept)", model.intercept_]
+    else:
+        df_coeffs = pd.DataFrame({"Facteur": features, "Importance": model.feature_importances_})
+
+    # Erreurs statistiques
+    df_errors_stats = df_errors.describe().T
+    df_errors_stats["MAE"] = df_errors["Erreur_Risque"].abs().mean()
+
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        _df_results.to_excel(writer, sheet_name="Résultats", index=True)
-        _df_report.to_excel(writer, sheet_name="Classification_Report")
-        df_cm = pd.DataFrame(
-            _cm,
-            index=[f"Réel_{l}" for l in labels],
-            columns=[f"Prédit_{l}" for l in labels],
-        )
-        df_cm.to_excel(writer, sheet_name="Confusion_Matrix")
+        df_results.to_excel(writer, sheet_name="Résultats")
+        df_report.to_excel(writer, sheet_name="Classification_Report")
+        pd.DataFrame(cm, index=labels, columns=labels).to_excel(writer, sheet_name="Confusion_Matrix")
+        df_coeffs.to_excel(writer, sheet_name="Facteurs_Coefficients", index=False)
+        df_errors_stats.to_excel(writer, sheet_name="Erreurs_Facteurs")
+
     buf.seek(0)
     return buf.read()
 
-excel_bytes = make_results_excel(df_results, df_report, cm)
+excel_bytes = make_results_excel()
 
 st.download_button(
-    "📥 Télécharger le rapport complet (Excel)",
+    "📥 Télécharger le rapport Excel complet",
     data=excel_bytes,
     file_name="rapport_risque.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
 
-# =========================
-# Astuces d’utilisation
-# =========================
-with st.expander("Astuces"):
-    st.markdown(
-        """
-- Utilise **Random Forest** si la relation n’est pas linéaire ou si tu veux plus de robustesse.
-- Les **seuils manuels** permettent d’aligner le diapason avec vos critères métiers.
-- Les **seuils automatiques** (quantiles) s’adaptent à la distribution observée.
-- Vérifie la **MSE** et la **matrice de confusion** pour juger la qualité.
-- Les **coefficients / importances** aident à interpréter les facteurs clés.
-"""
-    )
+st.markdown("""
+💡 **Astuce :**
+- La *heatmap* des erreurs montre quels facteurs influencent le plus les écarts de prédiction.  
+- Des corrélations élevées (positives ou négatives) indiquent des sources potentielles de biais ou de variance non capturée.
+""")
