@@ -56,7 +56,7 @@ def required_columns():
     return [
         "Niveau ingénieurs", "Niveau techniciens",
         "Expérience ingénieurs", "Expérience techniciens",
-        "Technologie exploitée", "Impacc Climat",
+        "Technologie exploitée", "Impact Climat",
         "Expérience entreprise", "indice_risk_const"
     ]
 
