@@ -82,7 +82,7 @@ st.dataframe(df.head())
 features = [
     "Niveau ingénieurs", "Niveau techniciens",
     "Expérience ingénieurs", "Expérience techniciens",
-    "Technologie exploitée", "Impacc Climat",
+    "Technologie exploitée", "Impact Climat",
     "Expérience entreprise"
 ]
 target = "indice_risk_const"
