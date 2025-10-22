@@ -321,7 +321,10 @@ with tabs[2]:
     - Fournir une estimation de l’`indice_risk_const`
     - Classer les entreprises selon un diapason **Critique / Moyen / Excellent**
     - Offrir des visualisations interactives et un rapport téléchargeable  
-
+    - choisir parmi plusieurs stratégies de construction celle qui minimise le risque (ou maximise la performance)
+    - Chaque stratégie pourrait représenter une méthode de gestion de chantier, un type de matériau, ou une approche logistique.
+    - Chaque stratégie est testée plusieurs fois, mais celles qui ont de meilleures performances et plus de confiance deviennent dominantes.
+    - L’UCB(Upper Confidence Bound) apprend, projet après projet, quelle stratégie minimise le risque tout en explorant intelligemment les autres options.
     ---
     👨‍🔬 **Auteur :** Dr. MOUALE  
     📅 Version : Octobre 2025  
