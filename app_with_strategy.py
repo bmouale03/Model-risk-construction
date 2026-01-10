@@ -205,6 +205,9 @@ with tabs[0]:
     sns.histplot(y_pred, color="orange", label="Risque prédit", kde=True, ax=ax4)
     ax4.legend()
     st.pyplot(fig4)
+    #st.write("Classes réelles présentes :", df_res["Classe_Réelle"].unique())
+    #st.write("Classes prédites présentes :", df_res["Classe_Prédit"].unique())
+
 
     # Matrice de confusion
     labels = ["Critique", "Moyen", "Excellent"]
@@ -213,53 +216,44 @@ with tabs[0]:
     fig5, ax5 = plt.subplots(figsize=(6, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels, ax=ax5)
     st.pyplot(fig5)
+   # === ВАЖНОСТЬ ПЕРЕМЕННЫХ ===
+    st.subheader("Важность факторов")
 
-    # Importance des variables
-    st.subheader("🧩 Importance des variables")
-    if model_name == "Régression linéaire":
-        coefs = pd.Series(model.coef_, index=features).sort_values(key=abs, ascending=False)
-        fig6, ax6 = plt.subplots(figsize=(6, 4))
-        coefs.sort_values().plot(kind="barh", ax=ax6, color="teal")
-        st.pyplot(fig6)
-    else:
-        importances = pd.Series(model.feature_importances_, index=features).sort_values(ascending=True)
-        fig7, ax7 = plt.subplots(figsize=(6, 4))
-        importances.plot(kind="barh", ax=ax7, color="forestgreen")
-        st.pyplot(fig7)
-
-    # Rapport Excel
-    df_report = pd.DataFrame(classification_report(df_res["Classe_Réelle"], df_res["Classe_Prédit"],
-                                        target_names=labels, output_dict=True)).transpose()
-
-    if model_name == "Régression linéaire":
+    if model_name == "Линейная регрессия":
         df_coeffs = pd.DataFrame({
-            "Facteur": features,
-            "Coefficient": model.coef_,
+            "Фактор": features,
+            "Коэффициент": model.coef_,
         })
-        df_coeffs["Erreur (moyenne absolue)"] = np.abs(y_test - y_pred).mean()
-        df_coeffs.loc[len(df_coeffs)] = ["Constante (intercept)", model.intercept_, np.nan]
+        df_coeffs["Ошибка (средняя абсолютная)"] = np.abs(y_test - y_pred).mean()
+        df_coeffs.loc[len(df_coeffs)] = [
+            "Константа (intercept)",
+            model.intercept_,
+            np.nan
+        ]
     else:
         df_coeffs = pd.DataFrame({
-            "Facteur": features,
-            "Importance (Random Forest)": model.feature_importances_,
+            "Фактор": features,
+            "Важность (Random Forest)": model.feature_importances_
         })
+      # === ВАЖНОСТЬ ПЕРЕМЕННЫХ ===
+    st.subheader("🧩 Важность факторов")
 
-    def export_excel():
-        buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-            df_res.to_excel(writer, sheet_name="Résultats", index=False)
-            df_report.to_excel(writer, sheet_name="Classification_Report")
-            pd.DataFrame(cm, index=labels, columns=labels).to_excel(writer, sheet_name="Confusion_Matrix")
-            df_coeffs.to_excel(writer, sheet_name="Facteurs_Coefficients", index=False)
-        buf.seek(0)
-        return buf
-
-    st.download_button(
-        "📥 Télécharger le rapport complet (Excel)",
-        data=export_excel(),
-        file_name="rapport_risque.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    if model_name == "Линейная регрессия":
+        df_coeffs = pd.DataFrame({
+            "Фактор": features,
+            "Коэффициент": model.coef_,
+        })
+        df_coeffs["Ошибка (средняя абсолютная)"] = np.abs(y_test - y_pred).mean()
+        df_coeffs.loc[len(df_coeffs)] = [
+            "Константа (intercept)",
+            model.intercept_,
+            np.nan
+        ]
+    else:
+        df_coeffs = pd.DataFrame({
+            "Фактор": features,
+            "Важность (Random Forest)": model.feature_importances_
+        })
 
 # =========================
 # 🧠 ONGLET 2 — Simulation UCB
