@@ -20,7 +20,8 @@ from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
     r2_score,
-    accuracy_score
+    accuracy_score,
+    confusion_matrix
 )
 from sklearn.inspection import permutation_importance
 
@@ -59,7 +60,7 @@ with tabs[0]:
         st.stop()
 
     # ======================
-    # 1. DATA PREPARATION
+    # DATA PREPARATION
     # ======================
 
     raw_df = pd.read_excel(uploaded_file)
@@ -80,6 +81,24 @@ with tabs[0]:
 
     st.success(f"Данные успешно загружены. Наблюдений: {len(df)}")
 
+    # ======================
+    # DATA PREVIEW
+    # ======================
+
+    st.subheader("Предварительный просмотр данных")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("Первые строки датасета")
+        st.dataframe(df.head())
+
+    with col2:
+        st.write("Статистическое описание")
+        st.dataframe(df.describe())
+
+    st.write("Размер датасета:", df.shape)
+
     features = [c for c in df.columns if c != "Индекс_качества"]
     target = "Индекс_качества"
 
@@ -89,7 +108,7 @@ with tabs[0]:
     st.write(f"Количество факторов: {len(features)}")
 
     # ======================
-    # 2. SPLIT
+    # SPLIT
     # ======================
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -99,7 +118,7 @@ with tabs[0]:
     )
 
     # ======================
-    # 3. MODELS
+    # MODELS
     # ======================
 
     models = {
@@ -160,7 +179,7 @@ with tabs[0]:
     y_pred = best_model.predict(X_test)
 
     # ======================
-    # 4. METRICS
+    # METRICS
     # ======================
 
     st.markdown(f"""
@@ -172,7 +191,52 @@ with tabs[0]:
     """)
 
     # ======================
-    # 5. PERMUTATION IMPORTANCE
+    # REAL VS PREDICTED
+    # ======================
+
+    st.subheader("Реальный риск vs Предсказанный риск")
+
+    fig_risk, ax = plt.subplots(figsize=(7,6))
+
+    sns.scatterplot(x=y_test, y=y_pred, ax=ax)
+
+    ax.plot(
+        [y_test.min(), y_test.max()],
+        [y_test.min(), y_test.max()],
+        color="red",
+        linestyle="--"
+    )
+
+    ax.set_xlabel("Реальный риск")
+    ax.set_ylabel("Предсказанный риск")
+
+    st.pyplot(fig_risk)
+
+    # ======================
+    # RESIDUAL PLOT
+    # ======================
+
+    st.subheader("Анализ остатков")
+
+    residuals = y_test - y_pred
+
+    fig_res, ax = plt.subplots(figsize=(7,5))
+
+    sns.scatterplot(
+        x=y_pred,
+        y=residuals,
+        ax=ax
+    )
+
+    ax.axhline(0, linestyle="--", color="red")
+
+    ax.set_xlabel("Предсказанные значения")
+    ax.set_ylabel("Остатки")
+
+    st.pyplot(fig_res)
+
+    # ======================
+    # PERMUTATION IMPORTANCE
     # ======================
 
     perm = permutation_importance(
@@ -199,10 +263,32 @@ with tabs[0]:
         y="Фактор",
         ax=ax
     )
+
     st.pyplot(fig_imp)
 
     # ======================
-    # 6. SHAP (FULL FIXED)
+    # FEATURE DISTRIBUTION
+    # ======================
+
+    st.subheader("Распределение факторов")
+
+    selected_feature = st.selectbox(
+        "Выберите фактор",
+        features
+    )
+
+    fig_dist, ax = plt.subplots(figsize=(7,5))
+
+    sns.histplot(
+        df[selected_feature],
+        kde=True,
+        ax=ax
+    )
+
+    st.pyplot(fig_dist)
+
+    # ======================
+    # SHAP
     # ======================
 
     st.subheader("SHAP-анализ")
@@ -211,7 +297,6 @@ with tabs[0]:
 
         explainer = shap.TreeExplainer(best_model)
         shap_values = explainer(X_test)
-
         shap_array = shap_values.values
 
         fig = plt.figure()
@@ -244,7 +329,7 @@ with tabs[0]:
         st.pyplot(fig)
 
     # ======================
-    # 7. CLASSIFICATION
+    # CLASSIFICATION
     # ======================
 
     low = y.quantile(0.35)
@@ -272,7 +357,36 @@ with tabs[0]:
     st.metric("Accuracy", f"{acc*100:.2f}%")
 
     # ======================
-    # 8. EXPORT
+    # CONFUSION MATRIX
+    # ======================
+
+    st.subheader("Матрица ошибок")
+
+    cm = confusion_matrix(
+        df_res["Реальный класс"],
+        df_res["Предсказанный класс"],
+        labels=["Критический","Средний","Отличный"]
+    )
+
+    fig_cm, ax = plt.subplots(figsize=(6,5))
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Критический","Средний","Отличный"],
+        yticklabels=["Критический","Средний","Отличный"],
+        ax=ax
+    )
+
+    ax.set_xlabel("Предсказанный класс")
+    ax.set_ylabel("Реальный класс")
+
+    st.pyplot(fig_cm)
+
+    # ======================
+    # EXPORT
     # ======================
 
     def export_excel():
@@ -353,14 +467,16 @@ with tabs[2]:
     st.header("О проекте")
 
     st.markdown("""
-    Научная система прогнозирования строительных рисков в Кот Дивуаре.
+    Научная система прогнозирования строительных рисков.
 
     Возможности:
     - Регрессионный анализ
     - Кросс-валидация
-    - SHAP-интерпретация
+    - SHAP интерпретация
     - Permutation Importance
-    - UCB-стратегии
+    - Confusion Matrix
+    - Residual Analysis
+    - UCB стратегии
     - Экспорт отчета
 
     Автор: Dr. MOUALE
