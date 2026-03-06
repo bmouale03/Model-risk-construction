@@ -25,6 +25,7 @@ from sklearn.metrics import (
 )
 from sklearn.inspection import permutation_importance
 
+
 # ==========================================================
 # CONFIG
 # ==========================================================
@@ -41,6 +42,7 @@ tabs = st.tabs([
     "Симуляция UCB",
     "ℹ О проекте"
 ])
+
 
 # ==========================================================
 # TAB 1 — MODELING
@@ -186,7 +188,6 @@ with tabs[0]:
 
     if best_model_name in ["Linear Regression", "Ridge Regression"]:
 
-        scaler = best_model.named_steps["scaler"]
         linear_model = best_model.named_steps["model"]
 
         intercept = linear_model.intercept_
@@ -203,7 +204,6 @@ with tabs[0]:
         )
 
         st.write("Константа модели B0:", intercept)
-
         st.dataframe(coefficients)
 
     else:
@@ -345,6 +345,63 @@ with tabs[0]:
         st.pyplot(fig)
 
     # ======================
+    # CLASSIFICATION
+    # ======================
+
+    low = y.quantile(0.35)
+    high = y.quantile(0.65)
+
+    def classify(v):
+        if v < low:
+            return "Критический"
+        elif v < high:
+            return "Средний"
+        else:
+            return "Отличный"
+
+    df_res = X_test.copy()
+    df_res["Реальный риск"] = y_test
+    df_res["Предсказанный риск"] = y_pred
+    df_res["Реальный класс"] = df_res["Реальный риск"].apply(classify)
+    df_res["Предсказанный класс"] = df_res["Предсказанный риск"].apply(classify)
+
+    acc = accuracy_score(
+        df_res["Реальный класс"],
+        df_res["Предсказанный класс"]
+    )
+
+    st.metric("Accuracy", f"{acc*100:.2f}%")
+
+    # ======================
+    # CONFUSION MATRIX
+    # ======================
+
+    st.subheader("Матрица ошибок")
+
+    cm = confusion_matrix(
+        df_res["Реальный класс"],
+        df_res["Предсказанный класс"],
+        labels=["Критический","Средний","Отличный"]
+    )
+
+    fig_cm, ax = plt.subplots(figsize=(6,5))
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Критический","Средний","Отличный"],
+        yticklabels=["Критический","Средний","Отличный"],
+        ax=ax
+    )
+
+    ax.set_xlabel("Предсказанный класс")
+    ax.set_ylabel("Реальный класс")
+
+    st.pyplot(fig_cm)
+
+    # ======================
     # EXPORT
     # ======================
 
@@ -354,6 +411,7 @@ with tabs[0]:
 
         with pd.ExcelWriter(buf, engine="openpyxl") as writer:
 
+            df_res.to_excel(writer, sheet_name="Результаты", index=False)
             df_models.to_excel(writer, sheet_name="Сравнение_Моделей", index=False)
             factor_importance.to_excel(writer, sheet_name="Ошибки_по_Факторам", index=False)
             coefficients.to_excel(writer, sheet_name="Model_Coefficients", index=False)
@@ -416,6 +474,7 @@ with tabs[1]:
             f"{int(counts[i])} выборов — "
             f"Средняя оценка: {rewards[i]/counts[i]:.3f}"
         )
+
 
 # ==========================================================
 # TAB 3 — ABOUT
