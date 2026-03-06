@@ -179,6 +179,37 @@ with tabs[0]:
     y_pred = best_model.predict(X_test)
 
     # ======================
+    # MODEL COEFFICIENTS
+    # ======================
+
+    st.subheader("Коэффициенты модели")
+
+    if best_model_name in ["Linear Regression", "Ridge Regression"]:
+
+        scaler = best_model.named_steps["scaler"]
+        linear_model = best_model.named_steps["model"]
+
+        coefficients = pd.DataFrame({
+            "Фактор": features,
+            "Коэффициент": linear_model.coef_
+        }).sort_values("Коэффициент", key=abs, ascending=False)
+
+        intercept = linear_model.intercept_
+
+        st.write("Свободный член (Intercept):", intercept)
+
+        st.dataframe(coefficients)
+
+    else:
+
+        coefficients = pd.DataFrame({
+            "Фактор": features,
+            "Важность": best_model.feature_importances_
+        }).sort_values("Важность", ascending=False)
+
+        st.dataframe(coefficients)
+
+    # ======================
     # METRICS
     # ======================
 
@@ -265,27 +296,6 @@ with tabs[0]:
     )
 
     st.pyplot(fig_imp)
-
-    # ======================
-    # FEATURE DISTRIBUTION
-    # ======================
-
-    st.subheader("Распределение факторов")
-
-    selected_feature = st.selectbox(
-        "Выберите фактор",
-        features
-    )
-
-    fig_dist, ax = plt.subplots(figsize=(7,5))
-
-    sns.histplot(
-        df[selected_feature],
-        kde=True,
-        ax=ax
-    )
-
-    st.pyplot(fig_dist)
 
     # ======================
     # SHAP
@@ -398,6 +408,7 @@ with tabs[0]:
             df_res.to_excel(writer, sheet_name="Результаты", index=False)
             df_models.to_excel(writer, sheet_name="Сравнение_Моделей", index=False)
             factor_importance.to_excel(writer, sheet_name="Ошибки_по_Факторам", index=False)
+            coefficients.to_excel(writer, sheet_name="Model_Coefficients", index=False)
 
             pd.DataFrame(
                 shap_array,
@@ -478,6 +489,5 @@ with tabs[2]:
     - Residual Analysis
     - UCB стратегии
     - Экспорт отчета
-
     Автор: Dr. MOUALE
     """)
